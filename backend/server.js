@@ -845,20 +845,38 @@ app.get('/api/mentor/attendance/pending', authenticateToken, requireRole(['mento
 // Get Attendance Schedule
 app.get('/api/mentor/schedule', authenticateToken, requireRole(['mentor', 'pengurus']), async (req, res) => {
   try {
-    const { month, year } = req.query;
+    const { month, year, page = 1, limit = 10 } = req.query;
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const offset = (pageNum - 1) * limitNum;
     
     let query = 'SELECT * FROM jadwal_absensi WHERE is_active = 1';
+    let countQuery = 'SELECT COUNT(*) as total FROM jadwal_absensi WHERE is_active = 1';
     let params = [];
 
     if (month && year) {
       query += ' AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?';
+      countQuery += ' AND MONTH(tanggal) = ? AND YEAR(tanggal) = ?';
       params = [month, year];
     }
 
-    query += ' ORDER BY tanggal DESC';
+    query += ' ORDER BY tanggal DESC LIMIT ? OFFSET ?';
+    params.push(limitNum, offset);
 
     const [rows] = await db.execute(query, params);
-    res.json(rows);
+    const [countResult] = await db.execute(countQuery, month && year ? [month, year] : []);
+    const total = countResult[0].total;
+    const totalPages = Math.ceil(total / limitNum);
+
+    res.json({
+      data: rows,
+      pagination: {
+        currentPage: pageNum,
+        totalPages,
+        totalItems: total,
+        itemsPerPage: limitNum
+      }
+    });
   } catch (error) {
     console.error('Get schedule error:', error);
     res.status(500).json({ message: 'Terjadi kesalahan server' });

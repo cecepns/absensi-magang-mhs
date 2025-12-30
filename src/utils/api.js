@@ -117,8 +117,8 @@ class ApiService {
     });
   }
 
-  async getAttendanceSchedule(month, year) {
-    return this.request(`/mentor/schedule?month=${month}&year=${year}`);
+  async getAttendanceSchedule(month, year, page = 1, limit = 10) {
+    return this.request(`/mentor/schedule?month=${month}&year=${year}&page=${page}&limit=${limit}`);
   }
 
   async createAttendanceSchedule(scheduleData) {

@@ -7,6 +7,12 @@ export default function MentorClockOut() {
   const [pendingAttendances, setPendingAttendances] = useState([]);
   const [students, setStudents] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [schedulePagination, setSchedulePagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
   const [loading, setLoading] = useState(true);
   const [showManualForm, setShowManualForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -27,23 +33,38 @@ export default function MentorClockOut() {
     fetchData();
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (page = schedulePagination.currentPage) => {
     setLoading(true);
     try {
       const today = new Date();
-      const [pending, studentsData, schedulesData] = await Promise.all([
+      const [pending, studentsData, schedulesResponse] = await Promise.all([
         ApiService.getPendingAttendances('clock_out'),
         ApiService.getStudents(),
-        ApiService.getAttendanceSchedule(today.getMonth() + 1, today.getFullYear())
+        ApiService.getAttendanceSchedule(today.getMonth() + 1, today.getFullYear(), page, 10)
       ]);
       setPendingAttendances(pending);
       setStudents(studentsData);
-      setSchedules(schedulesData || []);
+      if (schedulesResponse && schedulesResponse.data) {
+        setSchedules(schedulesResponse.data || []);
+        setSchedulePagination(schedulesResponse.pagination || {
+          currentPage: 1,
+          totalPages: 1,
+          totalItems: 0,
+          itemsPerPage: 10
+        });
+      } else {
+        // Fallback for old API response format
+        setSchedules(schedulesResponse || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSchedulePageChange = (newPage) => {
+    fetchData(newPage);
   };
 
   const handleApprove = async (attendanceId, approved) => {
@@ -98,7 +119,7 @@ export default function MentorClockOut() {
         batas_keluar: '17:30',
         keterangan: ''
       });
-      await fetchData();
+      await fetchData(1); // Reset to first page after creating schedule
     } catch (error) {
       alert('Gagal membuat jadwal: ' + error.message);
     }
@@ -149,31 +170,30 @@ export default function MentorClockOut() {
             <p>Belum ada jadwal yang dibuat</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Tanggal
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Jam Keluar
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Batas Keluar
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Keterangan
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {schedules
-                  .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))
-                  .map((schedule) => (
+          <>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Tanggal
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Jam Keluar
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Batas Keluar
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Keterangan
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {schedules.map((schedule) => (
                     <tr key={schedule.id}>
                       <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
                         {formatDate(new Date(schedule.tanggal))}
@@ -198,9 +218,69 @@ export default function MentorClockOut() {
                       </td>
                     </tr>
                   ))}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination Controls */}
+            {schedulePagination.totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between border-t border-gray-200 pt-4">
+                <div className="text-sm text-gray-700">
+                  Menampilkan {((schedulePagination.currentPage - 1) * schedulePagination.itemsPerPage) + 1} - {Math.min(schedulePagination.currentPage * schedulePagination.itemsPerPage, schedulePagination.totalItems)} dari {schedulePagination.totalItems} jadwal
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => handleSchedulePageChange(schedulePagination.currentPage - 1)}
+                    disabled={schedulePagination.currentPage === 1}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                      schedulePagination.currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Sebelumnya
+                  </button>
+                  <div className="flex space-x-1">
+                    {Array.from({ length: schedulePagination.totalPages }, (_, i) => i + 1)
+                      .filter(page => {
+                        const current = schedulePagination.currentPage;
+                        const total = schedulePagination.totalPages;
+                        return page === 1 || page === total || (page >= current - 1 && page <= current + 1);
+                      })
+                      .map((page, index, array) => {
+                        const prevPage = array[index - 1];
+                        const showEllipsis = prevPage && page - prevPage > 1;
+                        return (
+                          <div key={page} className="flex items-center">
+                            {showEllipsis && <span className="px-2 text-gray-500">...</span>}
+                            <button
+                              onClick={() => handleSchedulePageChange(page)}
+                              className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                                schedulePagination.currentPage === page
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          </div>
+                        );
+                      })}
+                  </div>
+                  <button
+                    onClick={() => handleSchedulePageChange(schedulePagination.currentPage + 1)}
+                    disabled={schedulePagination.currentPage === schedulePagination.totalPages}
+                    className={`px-3 py-2 text-sm font-medium rounded-lg ${
+                      schedulePagination.currentPage === schedulePagination.totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    Selanjutnya
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
