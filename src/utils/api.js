@@ -154,6 +154,60 @@ class ApiService {
       body: locationData,
     });
   }
+
+  // Pengurus User Management endpoints
+  async getAllUsers(role = null, search = null) {
+    const params = new URLSearchParams();
+    if (role) params.append('role', role);
+    if (search) params.append('search', search);
+    const query = params.toString();
+    return this.request(`/pengurus/users${query ? `?${query}` : ''}`);
+  }
+
+  async getUserById(id) {
+    return this.request(`/pengurus/users/${id}`);
+  }
+
+  async createUser(userData) {
+    return this.request('/pengurus/users', {
+      method: 'POST',
+      body: userData,
+    });
+  }
+
+  async updateUser(id, userData) {
+    return this.request(`/pengurus/users/${id}`, {
+      method: 'PUT',
+      body: userData,
+    });
+  }
+
+  async deleteUser(id) {
+    return this.request(`/pengurus/users/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async assignMentorToStudent(studentId, mentorId) {
+    return this.request(`/pengurus/users/${studentId}/assign-mentor`, {
+      method: 'POST',
+      body: { mentor_id: mentorId },
+    });
+  }
+
+  async unassignMentorFromStudent(studentId) {
+    return this.request(`/pengurus/users/${studentId}/unassign-mentor`, {
+      method: 'POST',
+    });
+  }
+
+  async getAllMentors() {
+    return this.request('/pengurus/mentors');
+  }
+
+  async getStudentsByMentor(mentorId) {
+    return this.request(`/pengurus/mentors/${mentorId}/students`);
+  }
 }
 
 export default new ApiService();

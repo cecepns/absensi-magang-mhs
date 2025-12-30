@@ -6,6 +6,7 @@ import { formatDate } from '../../utils/time';
 export default function MentorClockOut() {
   const [pendingAttendances, setPendingAttendances] = useState([]);
   const [students, setStudents] = useState([]);
+  const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showManualForm, setShowManualForm] = useState(false);
   const [showScheduleForm, setShowScheduleForm] = useState(false);
@@ -29,12 +30,15 @@ export default function MentorClockOut() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [pending, studentsData] = await Promise.all([
+      const today = new Date();
+      const [pending, studentsData, schedulesData] = await Promise.all([
         ApiService.getPendingAttendances('clock_out'),
-        ApiService.getStudents()
+        ApiService.getStudents(),
+        ApiService.getAttendanceSchedule(today.getMonth() + 1, today.getFullYear())
       ]);
       setPendingAttendances(pending);
       setStudents(studentsData);
+      setSchedules(schedulesData || []);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -94,6 +98,7 @@ export default function MentorClockOut() {
         batas_keluar: '17:30',
         keterangan: ''
       });
+      await fetchData();
     } catch (error) {
       alert('Gagal membuat jadwal: ' + error.message);
     }
@@ -131,6 +136,72 @@ export default function MentorClockOut() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Schedule List */}
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Daftar Jadwal Clock Out
+        </h3>
+        
+        {schedules.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            <p>Belum ada jadwal yang dibuat</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Tanggal
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Jam Keluar
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Batas Keluar
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Keterangan
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {schedules
+                  .sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal))
+                  .map((schedule) => (
+                    <tr key={schedule.id}>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                        {formatDate(new Date(schedule.tanggal))}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {schedule.jam_keluar}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {schedule.batas_keluar}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">
+                        {schedule.keterangan || '-'}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          schedule.is_active 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {schedule.is_active ? 'Aktif' : 'Tidak Aktif'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Pending Approvals */}

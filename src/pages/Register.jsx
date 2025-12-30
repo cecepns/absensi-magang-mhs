@@ -62,6 +62,18 @@ export default function Register() {
     'Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Lainnya'
   ];
 
+  const ue2Options = [
+    'Sekretariat Direktorat Jenderal',
+    'Direktorat Pinjaman dan Hibah',
+    'Direktorat Surat Utang Negara',
+    'Direktorat Pembiayaan Syariah',
+    'Direktorat Pengelolaan Risiko Keuangan Negara',
+    'Direktorat Pengelolaan Dukungan Pemerintah dan Pembiayaan Infrastruktur',
+    'Direktorat Strategi dan Portofolio Pembiayaan',
+    'Direktorat Evaluasi, Akuntansi, dan Setelmen',
+    'Lembaga Dana Kerja Sama Pembangunan Intenasional'
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -236,20 +248,24 @@ export default function Register() {
               <label htmlFor="ue2" className="block text-sm font-medium text-gray-700">
                 Unit Eselon 2 *
               </label>
-              <input
+              <select
                 id="ue2"
                 name="ue2"
-                type="text"
                 required
                 className="input-field mt-1"
                 value={formData.ue2}
                 onChange={handleChange}
-              />
+              >
+                <option value="">Pilih Unit Eselon 2</option>
+                {ue2Options.map(ue2 => (
+                  <option key={ue2} value={ue2}>{ue2}</option>
+                ))}
+              </select>
             </div>
 
             <div>
               <label htmlFor="ue3" className="block text-sm font-medium text-gray-700">
-                UE 3 *
+                Unit Eselon 3 *
               </label>
               <input
                 id="ue3"

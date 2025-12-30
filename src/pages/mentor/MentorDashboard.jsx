@@ -14,7 +14,6 @@ export default function MentorDashboard() {
   const user = getUserFromToken();
 
   const navigation = [
-    { name: 'Dashboard', path: '/mentor', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
     { name: 'Mahasiswa', path: '/mentor/students', icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
     { name: 'Clock In', path: '/mentor/clock-in', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
     { name: 'Clock Out', path: '/mentor/clock-out', icon: 'M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' },
@@ -23,8 +22,10 @@ export default function MentorDashboard() {
   ];
 
   const isActive = (path) => {
-    if (path === '/mentor') {
-      return location.pathname === '/mentor';
+    if (path === '/mentor/attendance') {
+      return location.pathname === '/mentor/attendance' || 
+             location.pathname === '/mentor/clock-in' || 
+             location.pathname === '/mentor/clock-out';
     }
     return location.pathname.startsWith(path);
   };
@@ -83,6 +84,7 @@ export default function MentorDashboard() {
         <Routes>
           <Route index element={<MentorOverview />} />
           <Route path="students" element={<MentorStudents />} />
+          <Route path="attendance" element={<Navigate to="/mentor/clock-in" replace />} />
           <Route path="clock-in" element={<MentorClockIn />} />
           <Route path="clock-out" element={<MentorClockOut />} />
           <Route path="logbook" element={<MentorLogbook />} />
@@ -133,7 +135,7 @@ function MentorOverview() {
             clockIn: todayClockIn,
             clockOut: todayClockOut
           };
-        } catch (err) {
+        } catch {
           return { id: student.id, clockIn: null, clockOut: null };
         }
       });

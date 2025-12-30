@@ -10,6 +10,8 @@ export default function MentorStudents() {
   const [attendanceData, setAttendanceData] = useState(null);
   const [monthFilter, setMonthFilter] = useState(new Date().getMonth() + 1);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear());
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileStudent, setProfileStudent] = useState(null);
 
   useEffect(() => {
     fetchStudents();
@@ -161,12 +163,23 @@ export default function MentorStudents() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button
-                          onClick={() => setSelectedStudent(student)}
-                          className="text-primary-600 hover:text-primary-900"
-                        >
-                          Detail
-                        </button>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => {
+                              setProfileStudent(student);
+                              setShowProfileModal(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Profil
+                          </button>
+                          <button
+                            onClick={() => setSelectedStudent(student)}
+                            className="text-primary-600 hover:text-primary-900"
+                          >
+                            Absensi
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -313,6 +326,135 @@ export default function MentorStudents() {
               <p>Tidak ada data absensi untuk periode ini</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Profile Modal */}
+      {showProfileModal && profileStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Profil Mahasiswa
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    setProfileStudent(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Personal Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    Informasi Pribadi
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Nama Lengkap
+                      </label>
+                      <p className="text-gray-900 font-medium">{profileStudent.nama_lengkap || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Email
+                      </label>
+                      <p className="text-gray-900">{profileStudent.email || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Nomor HP/WhatsApp
+                      </label>
+                      <p className="text-gray-900">{profileStudent.nomor_hp || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Tempat Lahir
+                      </label>
+                      <p className="text-gray-900">{profileStudent.tempat_lahir || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Tanggal Lahir
+                      </label>
+                      <p className="text-gray-900">
+                        {profileStudent.tanggal_lahir 
+                          ? new Date(profileStudent.tanggal_lahir).toLocaleDateString('id-ID', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric'
+                            })
+                          : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Agama
+                      </label>
+                      <p className="text-gray-900">{profileStudent.agama || '-'}</p>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Alamat Rumah/Kos
+                      </label>
+                      <p className="text-gray-900">{profileStudent.alamat || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Academic Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    Informasi Akademik
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Asal Universitas
+                      </label>
+                      <p className="text-gray-900">{profileStudent.asal_universitas || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Jurusan
+                      </label>
+                      <p className="text-gray-900">{profileStudent.jurusan || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Work Information */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    Informasi Unit Kerja
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Unit Eselon 2
+                      </label>
+                      <p className="text-gray-900">{profileStudent.ue2 || '-'}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-500 mb-1">
+                        Unit Eselon 3
+                      </label>
+                      <p className="text-gray-900">{profileStudent.ue3 || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

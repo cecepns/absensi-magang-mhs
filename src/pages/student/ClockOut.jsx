@@ -87,7 +87,7 @@ export default function ClockOut() {
       setSuccess('Clock out berhasil!');
       
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate('/dashboard', { state: { refresh: true } });
       }, 2000);
     } catch (err) {
       setError(err.message);

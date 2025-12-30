@@ -141,7 +141,7 @@ const authenticateToken = async (req, res, next) => {
 
     req.user = rows[0];
     next();
-  } catch (error) {
+  } catch {
     return res.status(403).json({ message: 'Token tidak valid' });
   }
 };
@@ -242,13 +242,15 @@ app.post('/api/auth/login', async (req, res) => {
       { 
         userId: user.id,
         email: user.email,
-        role: user.role 
+        role: user.role,
+        nama_lengkap: user.nama_lengkap
       },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
     // Remove password from response
+    // eslint-disable-next-line no-unused-vars
     const { password: _, ...userWithoutPassword } = user;
 
     res.json({
@@ -264,6 +266,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Get current user
 app.get('/api/auth/me', authenticateToken, (req, res) => {
+  // eslint-disable-next-line no-unused-vars
   const { password, ...userWithoutPassword } = req.user;
   res.json(userWithoutPassword);
 });
@@ -593,16 +596,44 @@ app.delete('/api/logbook/:id', authenticateToken, requireRole(['mahasiswa']), as
 // Get Students (for mentors)
 app.get('/api/mentor/students', authenticateToken, requireRole(['mentor', 'pengurus']), async (req, res) => {
   try {
-    let query = 'SELECT id, nama_lengkap, email, asal_universitas, jurusan, ue2, ue3, created_at FROM users WHERE role = "mahasiswa"';
+    let query = '';
     let params = [];
 
-    // If user is mentor (not pengurus), filter by UE2 and UE3
-    if (req.user.role === 'mentor') {
-      query += ' AND ue2 = ? AND ue3 = ?';
-      params = [req.user.ue2, req.user.ue3];
+    // If user is pengurus, get all students
+    if (req.user.role === 'pengurus') {
+      query = `
+        SELECT 
+          u.id, u.nama_lengkap, u.email, u.asal_universitas, u.jurusan, 
+          u.ue2, u.ue3, u.created_at,
+          msr.mentor_id,
+          m.nama_lengkap as mentor_name
+        FROM users u
+        LEFT JOIN mentor_student_relation msr ON u.id = msr.student_id AND msr.is_active = TRUE
+        LEFT JOIN users m ON msr.mentor_id = m.id
+        WHERE u.role = "mahasiswa" AND u.is_active = TRUE
+        ORDER BY u.nama_lengkap
+      `;
+    } else {
+      // If user is mentor, get students assigned to them OR by UE2/UE3 (fallback)
+      query = `
+        SELECT DISTINCT
+          u.id, u.nama_lengkap, u.email, u.asal_universitas, u.jurusan, 
+          u.ue2, u.ue3, u.created_at,
+          msr.mentor_id,
+          m.nama_lengkap as mentor_name
+        FROM users u
+        LEFT JOIN mentor_student_relation msr ON u.id = msr.student_id AND msr.is_active = TRUE
+        LEFT JOIN users m ON msr.mentor_id = m.id
+        WHERE u.role = "mahasiswa" 
+          AND u.is_active = TRUE
+          AND (
+            msr.mentor_id = ?
+            OR (msr.mentor_id IS NULL AND u.ue2 = ? AND u.ue3 = ?)
+          )
+        ORDER BY u.nama_lengkap
+      `;
+      params = [req.user.id, req.user.ue2, req.user.ue3];
     }
-
-    query += ' ORDER BY nama_lengkap';
 
     const [rows] = await db.execute(query, params);
     res.json(rows);
@@ -618,6 +649,33 @@ app.post('/api/mentor/attendance/approve', authenticateToken, requireRole(['ment
     const { attendanceId, approved, type = 'clock_in' } = req.body;
 
     const table = type === 'clock_in' ? 'absensi_clock_in' : 'absensi_clock_out';
+    
+    // Get attendance record to verify access
+    const [attendance] = await db.execute(
+      `SELECT user_id FROM ${table} WHERE id = ?`,
+      [attendanceId]
+    );
+
+    if (attendance.length === 0) {
+      return res.status(404).json({ message: 'Absensi tidak ditemukan' });
+    }
+
+    // If user is mentor (not pengurus), verify student access by eselon
+    if (req.user.role === 'mentor') {
+      const [student] = await db.execute(
+        'SELECT id, ue2, ue3 FROM users WHERE id = ? AND role = "mahasiswa"',
+        [attendance[0].user_id]
+      );
+
+      if (student.length === 0) {
+        return res.status(404).json({ message: 'Mahasiswa tidak ditemukan' });
+      }
+
+      // Check if mentor has access to this student (same eselon)
+      if (student[0].ue2 !== req.user.ue2 || student[0].ue3 !== req.user.ue3) {
+        return res.status(403).json({ message: 'Akses ditolak' });
+      }
+    }
     
     await db.execute(
       `UPDATE ${table} SET approved = ?, approved_by = ?, approved_at = NOW() WHERE id = ?`,
@@ -635,6 +693,23 @@ app.post('/api/mentor/attendance/approve', authenticateToken, requireRole(['ment
 app.post('/api/mentor/attendance/manual', authenticateToken, requireRole(['mentor', 'pengurus']), async (req, res) => {
   try {
     const { userId, type, tanggal, jam, keterangan, status = 'MANUAL' } = req.body;
+
+    // Verify student access (mentor can only access students in same eselon)
+    if (req.user.role === 'mentor') {
+      const [student] = await db.execute(
+        'SELECT id, ue2, ue3 FROM users WHERE id = ? AND role = "mahasiswa"',
+        [userId]
+      );
+
+      if (student.length === 0) {
+        return res.status(404).json({ message: 'Mahasiswa tidak ditemukan' });
+      }
+
+      // Check if mentor has access to this student (same eselon)
+      if (student[0].ue2 !== req.user.ue2 || student[0].ue3 !== req.user.ue3) {
+        return res.status(403).json({ message: 'Akses ditolak' });
+      }
+    }
 
     const table = type === 'clock_in' ? 'absensi_clock_in' : 'absensi_clock_out';
     
@@ -966,8 +1041,490 @@ app.put('/api/office/location', authenticateToken, requireRole(['pengurus']), as
   }
 });
 
+// USER MANAGEMENT ROUTES (Pengurus only)
+
+// Get All Users
+app.get('/api/pengurus/users', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { role, search } = req.query;
+    
+    let query = `
+      SELECT 
+        id, nama_lengkap, email, nomor_hp, asal_universitas, jurusan,
+        tempat_lahir, tanggal_lahir, alamat, agama, ue2, ue3, role,
+        is_active, created_at, updated_at
+      FROM users 
+      WHERE 1=1
+    `;
+    let params = [];
+
+    if (role) {
+      query += ' AND role = ?';
+      params.push(role);
+    }
+
+    if (search) {
+      query += ' AND (nama_lengkap LIKE ? OR email LIKE ?)';
+      const searchTerm = `%${search}%`;
+      params.push(searchTerm, searchTerm);
+    }
+
+    query += ' ORDER BY role, nama_lengkap';
+
+    const [rows] = await db.execute(query, params);
+    res.json(rows);
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Get Single User
+app.get('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const [rows] = await db.execute(
+      `SELECT 
+        id, nama_lengkap, email, nomor_hp, asal_universitas, jurusan,
+        tempat_lahir, tanggal_lahir, alamat, agama, ue2, ue3, role,
+        is_active, created_at, updated_at
+      FROM users WHERE id = ?`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    // Get mentor assignment if user is a student
+    if (rows[0].role === 'mahasiswa') {
+      const [mentorRelation] = await db.execute(
+        `SELECT msr.*, u.nama_lengkap as mentor_name, u.email as mentor_email
+         FROM mentor_student_relation msr
+         JOIN users u ON msr.mentor_id = u.id
+         WHERE msr.student_id = ? AND msr.is_active = TRUE
+         LIMIT 1`,
+        [id]
+      );
+      
+      if (mentorRelation.length > 0) {
+        rows[0].mentor = {
+          id: mentorRelation[0].mentor_id,
+          nama_lengkap: mentorRelation[0].mentor_name,
+          email: mentorRelation[0].mentor_email
+        };
+      }
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Create User
+app.post('/api/pengurus/users', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const {
+      nama_lengkap,
+      email,
+      nomor_hp,
+      asal_universitas,
+      jurusan,
+      tempat_lahir,
+      tanggal_lahir,
+      alamat,
+      agama,
+      ue2,
+      ue3,
+      password,
+      role = 'mahasiswa',
+      mentor_id
+    } = req.body;
+
+    // Validate required fields
+    if (!nama_lengkap || !email || !password) {
+      return res.status(400).json({ message: 'Nama lengkap, email, dan password harus diisi' });
+    }
+
+    // Check if email already exists
+    const [existingUser] = await db.execute(
+      'SELECT id FROM users WHERE email = ?',
+      [email]
+    );
+
+    if (existingUser.length > 0) {
+      return res.status(400).json({ message: 'Email sudah terdaftar' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcryptjs.hash(password, 10);
+
+    // Insert user
+    const [result] = await db.execute(
+      `INSERT INTO users (
+        nama_lengkap, email, nomor_hp, asal_universitas, jurusan,
+        tempat_lahir, tanggal_lahir, alamat, agama, ue2, ue3,
+        password, role, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        nama_lengkap, email, nomor_hp || '', asal_universitas || '', jurusan || '',
+        tempat_lahir || '', tanggal_lahir || null, alamat || '', agama || 'Islam',
+        ue2 || '', ue3 || '', hashedPassword, role
+      ]
+    );
+
+    const userId = result.insertId;
+
+    // Assign mentor if provided and user is a student
+    if (role === 'mahasiswa' && mentor_id) {
+      // Verify mentor exists and is actually a mentor
+      const [mentor] = await db.execute(
+        'SELECT id FROM users WHERE id = ? AND role IN ("mentor", "pengurus")',
+        [mentor_id]
+      );
+
+      if (mentor.length > 0) {
+        await db.execute(
+          `INSERT INTO mentor_student_relation (mentor_id, student_id, assigned_by, is_active)
+           VALUES (?, ?, ?, TRUE)`,
+          [mentor_id, userId, req.user.id]
+        );
+      }
+    }
+
+    res.status(201).json({
+      message: 'User berhasil dibuat',
+      userId: userId
+    });
+  } catch (error) {
+    console.error('Create user error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Update User
+app.put('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      nama_lengkap,
+      email,
+      nomor_hp,
+      asal_universitas,
+      jurusan,
+      tempat_lahir,
+      tanggal_lahir,
+      alamat,
+      agama,
+      ue2,
+      ue3,
+      password,
+      role,
+      is_active,
+      mentor_id
+    } = req.body;
+
+    // Check if user exists
+    const [existing] = await db.execute('SELECT id, role FROM users WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    const currentRole = existing[0].role;
+
+    // Build update query dynamically
+    const updateFields = [];
+    const updateValues = [];
+
+    if (nama_lengkap !== undefined) {
+      updateFields.push('nama_lengkap = ?');
+      updateValues.push(nama_lengkap);
+    }
+    if (email !== undefined) {
+      // Check if email is already taken by another user
+      const [emailCheck] = await db.execute(
+        'SELECT id FROM users WHERE email = ? AND id != ?',
+        [email, id]
+      );
+      if (emailCheck.length > 0) {
+        return res.status(400).json({ message: 'Email sudah digunakan oleh user lain' });
+      }
+      updateFields.push('email = ?');
+      updateValues.push(email);
+    }
+    if (nomor_hp !== undefined) {
+      updateFields.push('nomor_hp = ?');
+      updateValues.push(nomor_hp);
+    }
+    if (asal_universitas !== undefined) {
+      updateFields.push('asal_universitas = ?');
+      updateValues.push(asal_universitas);
+    }
+    if (jurusan !== undefined) {
+      updateFields.push('jurusan = ?');
+      updateValues.push(jurusan);
+    }
+    if (tempat_lahir !== undefined) {
+      updateFields.push('tempat_lahir = ?');
+      updateValues.push(tempat_lahir);
+    }
+    if (tanggal_lahir !== undefined) {
+      updateFields.push('tanggal_lahir = ?');
+      updateValues.push(tanggal_lahir);
+    }
+    if (alamat !== undefined) {
+      updateFields.push('alamat = ?');
+      updateValues.push(alamat);
+    }
+    if (agama !== undefined) {
+      updateFields.push('agama = ?');
+      updateValues.push(agama);
+    }
+    if (ue2 !== undefined) {
+      updateFields.push('ue2 = ?');
+      updateValues.push(ue2);
+    }
+    if (ue3 !== undefined) {
+      updateFields.push('ue3 = ?');
+      updateValues.push(ue3);
+    }
+    if (password !== undefined && password !== '') {
+      const hashedPassword = await bcryptjs.hash(password, 10);
+      updateFields.push('password = ?');
+      updateValues.push(hashedPassword);
+    }
+    if (role !== undefined) {
+      updateFields.push('role = ?');
+      updateValues.push(role);
+    }
+    if (is_active !== undefined) {
+      updateFields.push('is_active = ?');
+      updateValues.push(is_active);
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ message: 'Tidak ada field yang diupdate' });
+    }
+
+    updateFields.push('updated_at = NOW()');
+    updateValues.push(id);
+
+    await db.execute(
+      `UPDATE users SET ${updateFields.join(', ')} WHERE id = ?`,
+      updateValues
+    );
+
+    // Handle mentor assignment for students
+    if ((role === 'mahasiswa' || currentRole === 'mahasiswa') && mentor_id !== undefined) {
+      // Deactivate existing mentor relations
+      await db.execute(
+        'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ?',
+        [id]
+      );
+
+      if (mentor_id) {
+        // Verify mentor exists
+        const [mentor] = await db.execute(
+          'SELECT id FROM users WHERE id = ? AND role IN ("mentor", "pengurus")',
+          [mentor_id]
+        );
+
+        if (mentor.length > 0) {
+          // Check if relation already exists
+          const [existingRelation] = await db.execute(
+            'SELECT id FROM mentor_student_relation WHERE mentor_id = ? AND student_id = ?',
+            [mentor_id, id]
+          );
+
+          if (existingRelation.length > 0) {
+            // Reactivate existing relation
+            await db.execute(
+              'UPDATE mentor_student_relation SET is_active = TRUE, assigned_by = ?, updated_at = NOW() WHERE id = ?',
+              [req.user.id, existingRelation[0].id]
+            );
+          } else {
+            // Create new relation
+            await db.execute(
+              `INSERT INTO mentor_student_relation (mentor_id, student_id, assigned_by, is_active)
+               VALUES (?, ?, ?, TRUE)`,
+              [mentor_id, id, req.user.id]
+            );
+          }
+        }
+      }
+    }
+
+    res.json({ message: 'User berhasil diupdate' });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Delete User (Soft delete by setting is_active = false)
+app.delete('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const [existing] = await db.execute('SELECT id FROM users WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    // Prevent deleting yourself
+    if (parseInt(id) === req.user.id) {
+      return res.status(400).json({ message: 'Tidak dapat menghapus akun sendiri' });
+    }
+
+    // Soft delete
+    await db.execute('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = ?', [id]);
+
+    // Deactivate mentor relations
+    await db.execute(
+      'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ? OR mentor_id = ?',
+      [id, id]
+    );
+
+    res.json({ message: 'User berhasil dinonaktifkan' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Assign Student to Mentor
+app.post('/api/pengurus/users/:studentId/assign-mentor', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const { mentor_id } = req.body;
+
+    if (!mentor_id) {
+      return res.status(400).json({ message: 'Mentor ID harus diisi' });
+    }
+
+    // Verify student exists and is a student
+    const [student] = await db.execute(
+      'SELECT id, role FROM users WHERE id = ? AND role = "mahasiswa"',
+      [studentId]
+    );
+
+    if (student.length === 0) {
+      return res.status(404).json({ message: 'Mahasiswa tidak ditemukan' });
+    }
+
+    // Verify mentor exists and is a mentor or pengurus
+    const [mentor] = await db.execute(
+      'SELECT id FROM users WHERE id = ? AND role IN ("mentor", "pengurus")',
+      [mentor_id]
+    );
+
+    if (mentor.length === 0) {
+      return res.status(404).json({ message: 'Mentor tidak ditemukan' });
+    }
+
+    // Deactivate existing mentor relations for this student
+    await db.execute(
+      'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ?',
+      [studentId]
+    );
+
+    // Check if relation already exists
+    const [existingRelation] = await db.execute(
+      'SELECT id FROM mentor_student_relation WHERE mentor_id = ? AND student_id = ?',
+      [mentor_id, studentId]
+    );
+
+    if (existingRelation.length > 0) {
+      // Reactivate existing relation
+      await db.execute(
+        'UPDATE mentor_student_relation SET is_active = TRUE, assigned_by = ?, updated_at = NOW() WHERE id = ?',
+        [req.user.id, existingRelation[0].id]
+      );
+    } else {
+      // Create new relation
+      await db.execute(
+        `INSERT INTO mentor_student_relation (mentor_id, student_id, assigned_by, is_active)
+         VALUES (?, ?, ?, TRUE)`,
+        [mentor_id, studentId, req.user.id]
+      );
+    }
+
+    res.json({ message: 'Mahasiswa berhasil diassign ke mentor' });
+  } catch (error) {
+    console.error('Assign mentor error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Unassign Student from Mentor
+app.post('/api/pengurus/users/:studentId/unassign-mentor', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    // Verify student exists
+    const [student] = await db.execute('SELECT id FROM users WHERE id = ?', [studentId]);
+    if (student.length === 0) {
+      return res.status(404).json({ message: 'Mahasiswa tidak ditemukan' });
+    }
+
+    // Deactivate all mentor relations for this student
+    await db.execute(
+      'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ?',
+      [studentId]
+    );
+
+    res.json({ message: 'Mahasiswa berhasil diunassign dari mentor' });
+  } catch (error) {
+    console.error('Unassign mentor error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Get All Mentors (for dropdown/selection)
+app.get('/api/pengurus/mentors', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const [rows] = await db.execute(
+      `SELECT id, nama_lengkap, email, ue2, ue3 
+       FROM users 
+       WHERE role IN ('mentor', 'pengurus') AND is_active = TRUE
+       ORDER BY nama_lengkap`
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Get mentors error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Get Students by Mentor
+app.get('/api/pengurus/mentors/:mentorId/students', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { mentorId } = req.params;
+
+    const [rows] = await db.execute(
+      `SELECT 
+        u.id, u.nama_lengkap, u.email, u.asal_universitas, u.jurusan, u.ue2, u.ue3,
+        msr.assigned_at, msr.notes
+       FROM users u
+       INNER JOIN mentor_student_relation msr ON u.id = msr.student_id
+       WHERE msr.mentor_id = ? AND msr.is_active = TRUE AND u.is_active = TRUE
+       ORDER BY u.nama_lengkap`,
+      [mentorId]
+    );
+
+    res.json(rows);
+  } catch (error) {
+    console.error('Get students by mentor error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err, req, res) => {
   console.error('Unhandled error:', err);
   res.status(500).json({ message: 'Terjadi kesalahan server' });
 });
