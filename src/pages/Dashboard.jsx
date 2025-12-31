@@ -334,24 +334,31 @@ export default function Dashboard() {
               <h1 className="text-2xl font-bold text-gray-900">
                 👋 Selamat datang, {user?.nama_lengkap}!
               </h1>
-              <p className="text-gray-600 mt-1">
-                {formatDate(new Date())} - Status:{" "}
-                <span
-                  className={`font-semibold ${
-                    clockStatus === "completed"
-                      ? "text-green-600"
+              {user?.role === "mahasiswa" && (
+                <p className="text-gray-600 mt-1">
+                  {formatDate(new Date())} - Status:{" "}
+                  <span
+                    className={`font-semibold ${
+                      clockStatus === "completed"
+                        ? "text-green-600"
+                        : clockStatus === "clocked_in"
+                        ? "text-yellow-600"
+                        : "text-gray-600"
+                    }`}
+                  >
+                    {clockStatus === "completed"
+                      ? "Absensi Lengkap"
                       : clockStatus === "clocked_in"
-                      ? "text-yellow-600"
-                      : "text-gray-600"
-                  }`}
-                >
-                  {clockStatus === "completed"
-                    ? "Absensi Lengkap"
-                    : clockStatus === "clocked_in"
-                    ? "Sudah Clock In"
-                    : "Belum Absensi"}
-                </span>
-              </p>
+                      ? "Sudah Clock In"
+                      : "Belum Absensi"}
+                  </span>
+                </p>
+              )}
+              {user?.role !== "mahasiswa" && (
+                <p className="text-gray-600 mt-1">
+                  {formatDate(new Date())}
+                </p>
+              )}
             </div>
             <div className="text-right">
               <div className="text-sm text-gray-500">Waktu Saat Ini</div>
