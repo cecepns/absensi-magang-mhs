@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import moment from 'moment';
 import ApiService from '../../utils/api';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { formatDate } from '../../utils/time';
@@ -8,20 +9,11 @@ export default function MentorStudents() {
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [attendanceData, setAttendanceData] = useState(null);
+  const [studentsTodayStatus, setStudentsTodayStatus] = useState({});
   const [monthFilter, setMonthFilter] = useState(new Date().getMonth() + 1);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear());
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileStudent, setProfileStudent] = useState(null);
-
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  useEffect(() => {
-    if (selectedStudent) {
-      fetchStudentAttendance();
-    }
-  }, [selectedStudent, monthFilter, yearFilter]);
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -35,7 +27,70 @@ export default function MentorStudents() {
     }
   };
 
-  const fetchStudentAttendance = async () => {
+  const fetchAllStudentsTodayStatus = useCallback(async () => {
+    try {
+      const today = moment().format('YYYY-MM-DD');
+      const month = new Date().getMonth() + 1;
+      const year = new Date().getFullYear();
+      
+      const statusPromises = students.map(async (student) => {
+        try {
+          const attendance = await ApiService.getStudentAttendance(
+            student.id,
+            'all',
+            month,
+            year
+          );
+          
+          const todayClockIn = attendance.find(item => {
+            if (!item.tanggal) return false;
+            const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+            return itemDate === today && item.type === 'clock_in';
+          });
+          
+          const todayClockOut = attendance.find(item => {
+            if (!item.tanggal) return false;
+            const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+            return itemDate === today && item.type === 'clock_out';
+          });
+
+          let status = 'absent';
+          if (todayClockIn && todayClockOut) {
+            status = 'present';
+          } else if (todayClockIn) {
+            const isLate = todayClockIn.jam > '08:00:00';
+            status = isLate ? 'late' : 'clocked_in';
+          }
+
+          return {
+            studentId: student.id,
+            status,
+            clockIn: todayClockIn,
+            clockOut: todayClockOut
+          };
+        } catch (error) {
+          console.error(`Error fetching status for student ${student.id}:`, error);
+          return {
+            studentId: student.id,
+            status: 'absent',
+            clockIn: null,
+            clockOut: null
+          };
+        }
+      });
+
+      const statuses = await Promise.all(statusPromises);
+      const statusMap = {};
+      statuses.forEach(({ studentId, status, clockIn, clockOut }) => {
+        statusMap[studentId] = { status, clockIn, clockOut };
+      });
+      setStudentsTodayStatus(statusMap);
+    } catch (error) {
+      console.error('Error fetching students today status:', error);
+    }
+  }, [students]);
+
+  const fetchStudentAttendance = useCallback(async () => {
     if (!selectedStudent) return;
     
     try {
@@ -50,26 +105,27 @@ export default function MentorStudents() {
       console.error('Error fetching attendance:', error);
       setAttendanceData([]);
     }
-  };
+  }, [selectedStudent, monthFilter, yearFilter]);
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  useEffect(() => {
+    if (students.length > 0) {
+      fetchAllStudentsTodayStatus();
+    }
+  }, [students, fetchAllStudentsTodayStatus]);
+
+  useEffect(() => {
+    if (selectedStudent) {
+      fetchStudentAttendance();
+    }
+  }, [selectedStudent, monthFilter, yearFilter, fetchStudentAttendance]);
 
   const getTodayStatus = (studentId) => {
-    if (!attendanceData || selectedStudent?.id !== studentId) return null;
-    
-    const today = new Date().toISOString().split('T')[0];
-    const todayClockIn = attendanceData.find(item => 
-      item.tanggal === today && item.type === 'clock_in'
-    );
-    const todayClockOut = attendanceData.find(item => 
-      item.tanggal === today && item.type === 'clock_out'
-    );
-
-    if (todayClockIn && todayClockOut) {
-      return { status: 'present', clockIn: todayClockIn, clockOut: todayClockOut };
-    } else if (todayClockIn) {
-      const isLate = todayClockIn.jam > '08:00:00';
-      return { status: isLate ? 'late' : 'clocked_in', clockIn: todayClockIn, clockOut: null };
-    }
-    return { status: 'absent', clockIn: null, clockOut: null };
+    // Use the pre-fetched status from studentsTodayStatus
+    return studentsTodayStatus[studentId] || null;
   };
 
   const monthNames = [
