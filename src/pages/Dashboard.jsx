@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import moment from "moment";
 import Layout from "../components/Layout/Layout";
 import { getUserFromToken } from "../utils/auth";
 import { formatDate, formatTime } from "../utils/time";
@@ -26,7 +27,7 @@ function MentorStats() {
   const fetchStats = async () => {
     try {
       const students = await ApiService.getStudents();
-      const today = new Date().toISOString().split("T")[0];
+      const today = moment().format('YYYY-MM-DD');
 
       // Fetch today's attendance for all students
       const attendancePromises = students.map(async (student) => {
@@ -38,10 +39,18 @@ function MentorStats() {
             new Date().getFullYear()
           );
           const todayClockIn = history.find(
-            (item) => item.tanggal === today && item.type === "clock_in"
+            (item) => {
+              if (!item.tanggal) return false;
+              const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+              return itemDate === today && item.type === "clock_in";
+            }
           );
           const todayClockOut = history.find(
-            (item) => item.tanggal === today && item.type === "clock_out"
+            (item) => {
+              if (!item.tanggal) return false;
+              const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+              return itemDate === today && item.type === "clock_out";
+            }
           );
 
           return {
@@ -49,7 +58,7 @@ function MentorStats() {
             clockIn: todayClockIn,
             clockOut: todayClockOut,
           };
-        } catch (err) {
+        } catch {
           return { id: student.id, clockIn: null, clockOut: null };
         }
       });
@@ -259,25 +268,40 @@ export default function Dashboard() {
       const month = today.getMonth() + 1;
       const year = today.getFullYear();
 
+      // Get today's date using moment (format: YYYY-MM-DD)
+      const todayMoment = moment();
+      const todayDate = todayMoment.format('YYYY-MM-DD');
+
       // Fetch today's attendance
       const attendanceHistory = await ApiService.getAttendanceHistory(
         "all",
         month,
         year
       );
-      const todayDate = today.toISOString().split("T")[0];
       const todayClockIn = attendanceHistory.find(
-        (item) => item.tanggal === todayDate && item.type === "clock_in"
+        (item) => {
+          if (!item.tanggal) return false;
+          const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+          return itemDate === todayDate && item.type === "clock_in";
+        }
       );
       const todayClockOut = attendanceHistory.find(
-        (item) => item.tanggal === todayDate && item.type === "clock_out"
+        (item) => {
+          if (!item.tanggal) return false;
+          const itemDate = moment(item.tanggal).format('YYYY-MM-DD');
+          return itemDate === todayDate && item.type === "clock_out";
+        }
       );
 
       setTodayAttendance({ clockIn: todayClockIn, clockOut: todayClockOut });
 
       // Fetch today's logbooks
       const logbooks = await ApiService.getLogbooks(month, year);
-      const todayLogs = logbooks.filter((log) => log.tanggal === todayDate);
+      const todayLogs = logbooks.filter((log) => {
+        if (!log.tanggal) return false;
+        const logDate = moment(log.tanggal).format('YYYY-MM-DD');
+        return logDate === todayDate;
+      });
       setTodayLogbooks(todayLogs);
     } catch (error) {
       console.error("Error fetching today data:", error);
