@@ -129,9 +129,9 @@ export default function OfficeLocation() {
 
   if (user?.role !== 'pengurus') {
     return (
-      <div className="card p-6">
+      <div className="card-gradient p-6">
         <div className="text-center py-8">
-          <p className="text-red-600">Akses ditolak. Hanya pengurus yang dapat mengakses halaman ini.</p>
+          <p className="text-red-600 font-medium">Akses ditolak. Hanya pengurus yang dapat mengakses halaman ini.</p>
         </div>
       </div>
     );
@@ -148,9 +148,9 @@ export default function OfficeLocation() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Pengaturan Lokasi Kantor</h2>
-        <p className="text-gray-600">
+      <div className="card-gradient p-6">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">Pengaturan Lokasi Kantor</h2>
+        <p className="text-gray-700 font-medium">
           Atur koordinat lokasi kantor untuk validasi absensi. Koordinat ini akan digunakan untuk menghitung jarak saat mahasiswa melakukan clock in/out.
         </p>
       </div>
@@ -169,7 +169,7 @@ export default function OfficeLocation() {
       )}
 
       {/* Form */}
-      <div className="card p-6">
+      <div className="card-gradient p-6">
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Current Location Button */}
           <div>

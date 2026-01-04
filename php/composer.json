@@ -1,0 +1,16 @@
+{
+    "name": "absensi-magang/email-sender",
+    "description": "Email sender untuk sistem absensi magang",
+    "type": "library",
+    "require": {
+        "php": ">=7.4",
+        "phpmailer/phpmailer": "^6.8"
+    },
+    "autoload": {
+        "psr-4": {
+            "AbsensiMagang\\": "src/"
+        }
+    }
+}
+
+

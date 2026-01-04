@@ -251,7 +251,7 @@ export default function UserManagement() {
       <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900">Manajemen User</h1>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">Manajemen User</h1>
         <button
           onClick={() => handleOpenModal()}
           className="btn-primary"
@@ -261,7 +261,7 @@ export default function UserManagement() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
+      <div className="card-gradient p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,7 +294,7 @@ export default function UserManagement() {
       </div>
 
       {/* Users Table */}
-      <div className="card p-6">
+      <div className="card-gradient p-6">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -372,14 +372,14 @@ export default function UserManagement() {
                       <div className="flex space-x-2">
                         <button
                           onClick={() => handleOpenModal(user)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-purple-600 hover:text-purple-800 font-medium"
                         >
                           Edit
                         </button>
                         {user.role === 'mahasiswa' && (
                           <button
                             onClick={() => handleOpenAssignModal(user)}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-pink-600 hover:text-pink-800 font-medium"
                           >
                             Assign Mentor
                           </button>
@@ -404,10 +404,10 @@ export default function UserManagement() {
       {/* Create/Edit User Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border-2 border-purple-200">
             <div className="p-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                   {editingUser ? 'Edit User' : 'Tambah User Baru'}
                 </h2>
                 <button
@@ -624,10 +624,10 @@ export default function UserManagement() {
       {/* Assign Mentor Modal */}
       {showAssignModal && selectedStudent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-md w-full">
+          <div className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 rounded-lg max-w-md w-full border-2 border-pink-200">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent">
                   Assign Mentor
                 </h2>
                 <button

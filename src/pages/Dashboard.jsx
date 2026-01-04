@@ -95,11 +95,11 @@ function MentorStats() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-primary-100 rounded-lg">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg shadow-lg">
               <svg
-                className="w-6 h-6 text-primary-600"
+                className="w-6 h-6 text-white"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -328,10 +328,10 @@ export default function Dashboard() {
     <Layout>
       <div className="space-y-6">
         {/* Welcome Section */}
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
                 👋 Selamat datang, {user?.nama_lengkap}!
               </h1>
               {user?.role === "mahasiswa" && (
@@ -361,8 +361,8 @@ export default function Dashboard() {
               )}
             </div>
             <div className="text-right">
-              <div className="text-sm text-gray-500">Waktu Saat Ini</div>
-              <div className="text-lg font-mono font-bold text-primary-600">
+              <div className="text-sm text-gray-600 font-medium">Waktu Saat Ini</div>
+              <div className="text-lg font-mono font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                 {formatTime(new Date())}
               </div>
             </div>
@@ -375,24 +375,20 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link
                 to="/clock-in"
-                className={`card p-6 hover:shadow-lg transition-shadow ${
-                  todayAttendance?.clockIn ? "bg-green-50 border-green-200" : ""
+                className={`card-gradient p-6 hover:shadow-xl transition-all duration-300 ${
+                  todayAttendance?.clockIn ? "ring-2 ring-green-400 ring-opacity-50" : ""
                 }`}
               >
                 <div className="flex items-center space-x-4">
                   <div
-                    className={`p-3 rounded-lg ${
+                    className={`p-3 rounded-lg shadow-lg ${
                       todayAttendance?.clockIn
-                        ? "bg-green-100"
-                        : "bg-primary-100"
+                        ? "bg-gradient-to-br from-green-400 to-green-600"
+                        : "bg-gradient-to-br from-purple-500 to-pink-500"
                     }`}
                   >
                     <svg
-                      className={`w-6 h-6 ${
-                        todayAttendance?.clockIn
-                          ? "text-green-600"
-                          : "text-primary-600"
-                      }`}
+                      className={`w-6 h-6 text-white`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -418,26 +414,22 @@ export default function Dashboard() {
 
               <Link
                 to="/clock-out"
-                className={`card p-6 hover:shadow-lg transition-shadow ${
+                className={`card-gradient p-6 hover:shadow-xl transition-all duration-300 ${
                   todayAttendance?.clockOut
-                    ? "bg-green-50 border-green-200"
+                    ? "ring-2 ring-green-400 ring-opacity-50"
                     : ""
                 }`}
               >
                 <div className="flex items-center space-x-4">
                   <div
-                    className={`p-3 rounded-lg ${
+                    className={`p-3 rounded-lg shadow-lg ${
                       todayAttendance?.clockOut
-                        ? "bg-green-100"
-                        : "bg-secondary-100"
+                        ? "bg-gradient-to-br from-green-400 to-green-600"
+                        : "bg-gradient-to-br from-orange-500 to-pink-500"
                     }`}
                   >
                     <svg
-                      className={`w-6 h-6 ${
-                        todayAttendance?.clockOut
-                          ? "text-green-600"
-                          : "text-secondary-600"
-                      }`}
+                      className={`w-6 h-6 text-white`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -463,12 +455,12 @@ export default function Dashboard() {
 
               <Link
                 to="/logbook"
-                className="card p-6 hover:shadow-lg transition-shadow"
+                className="card-gradient p-6 hover:shadow-xl transition-all duration-300"
               >
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 rounded-lg bg-accent-100">
+                  <div className="p-3 rounded-lg bg-gradient-to-br from-pink-500 to-orange-500 shadow-lg">
                     <svg
-                      className="w-6 h-6 text-accent-600"
+                      className="w-6 h-6 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -492,7 +484,7 @@ export default function Dashboard() {
             </div>
 
             {/* Today's Activities */}
-            <div className="card p-6">
+            <div className="card-gradient p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 Aktivitas Hari Ini
               </h2>
@@ -573,30 +565,30 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <Link
                 to="/mentor/students"
-                className="card p-6 hover:shadow-lg transition-shadow"
+                className="card-gradient p-6 hover:shadow-xl transition-all duration-300"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
                   Kelola Mahasiswa
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-700 mb-4">
                   Lihat daftar mahasiswa dan status kehadiran mereka
                 </p>
-                <div className="text-primary-600 font-medium">
+                <div className="text-purple-600 font-medium">
                   Lihat Detail →
                 </div>
               </Link>
 
               <Link
                 to="/mentor/attendance"
-                className="card p-6 hover:shadow-lg transition-shadow"
+                className="card-gradient p-6 hover:shadow-xl transition-all duration-300"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mb-2">
                   Kelola Absensi
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-700 mb-4">
                   Atur jadwal absensi dan approval kehadiran
                 </p>
-                <div className="text-primary-600 font-medium">
+                <div className="text-orange-600 font-medium">
                   Kelola Absensi →
                 </div>
               </Link>

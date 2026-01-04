@@ -1,0 +1,136 @@
+# COMMAND CRONJOB UNTUK CPANEL
+# Path base: home/isad8273/public_html/api-inventory.isavralabel.com
+
+# ============================================
+# OPSI 1: Jika folder php ada di root project (RECOMMENDED - dengan wrapper)
+# ============================================
+*/5 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/run_cronjob.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# OPSI 1A: Tanpa wrapper (jika masih ada deprecation warnings)
+# */5 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# ============================================
+# OPSI 2: Jika folder php ada di dalam folder api (RECOMMENDED - dengan wrapper)
+# ============================================
+*/5 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/run_cronjob.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/logs/cron.log 2>&1
+
+# OPSI 2A: Tanpa wrapper
+# */5 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/logs/cron.log 2>&1
+
+# ============================================
+# OPSI 3: Jika menggunakan path PHP yang berbeda (RECOMMENDED - dengan wrapper)
+# Cek path PHP dengan: which php (via SSH)
+# ============================================
+*/5 * * * * /usr/local/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/run_cronjob.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# OPSI 3A: Tanpa wrapper
+# */5 * * * * /usr/local/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# ============================================
+# FREKUENSI LAINNYA (pilih salah satu)
+# ============================================
+
+# Setiap 10 menit
+*/10 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# Setiap 15 menit
+*/15 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# Setiap jam (pukul 00:00, 01:00, dst)
+0 * * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_emails.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/cron.log 2>&1
+
+# ============================================
+# CATATAN PENTING:
+# ============================================
+# 1. Ganti path /usr/bin/php jika berbeda di server Anda
+#    Cara cek: Login SSH, ketik: which php
+#
+# 2. Pastikan folder php ada di lokasi yang benar
+#    Path uploads: home/isad8273/public_html/api-inventory.isavralabel.com/api/uploads-absensi-mahasiswa-magang
+#    Kemungkinan folder php: home/isad8273/public_html/api-inventory.isavralabel.com/php/
+#
+# 3. Pastikan folder logs/ sudah dibuat dan bisa ditulis
+#    chmod 755 php/logs/
+#
+# 4. Test command manual dulu sebelum setup cronjob:
+#    /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/run_cronjob.php
+#
+# 5. CATATAN PENTING TENTANG DEPRECATION WARNINGS:
+#    - Jika Anda melihat deprecation warnings dari Roundcube/cPanel di log,
+#      gunakan run_cronjob.php (wrapper script) yang sudah menekan warnings tersebut
+#    - Wrapper script akan tetap menampilkan error yang relevan untuk aplikasi Anda
+#    - Deprecation warnings dari third-party libraries tidak akan mengganggu eksekusi
+
+# ============================================
+# REMINDER CLOCK IN DAN CLOCK OUT
+# ============================================
+# Script reminder akan mengirim email pengingat kepada mahasiswa yang belum:
+# - Clock In: Diingatkan pada pukul 07:15
+# - Clock Out: Diingatkan pada pukul 16:45
+
+# ============================================
+# OPSI 1: Reminder dengan wrapper (RECOMMENDED - untuk menghindari deprecation warnings)
+# ============================================
+
+# Reminder Clock In (setiap hari pukul 07:15)
+15 7 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/run_reminder_cronjob.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# Reminder Clock Out (setiap hari pukul 16:45)
+45 16 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/run_reminder_cronjob.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# ============================================
+# OPSI 1A: Reminder tanpa wrapper
+# ============================================
+
+# Reminder Clock In (setiap hari pukul 07:15)
+# 15 7 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# Reminder Clock Out (setiap hari pukul 16:45)
+# 45 16 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# ============================================
+# OPSI 2: Jika folder php ada di dalam folder api
+# ============================================
+
+# Reminder Clock In (setiap hari pukul 07:15)
+# 15 7 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/logs/reminder.log 2>&1
+
+# Reminder Clock Out (setiap hari pukul 16:45)
+# 45 16 * * * /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/api/php/logs/reminder.log 2>&1
+
+# ============================================
+# OPSI 3: Jika menggunakan path PHP yang berbeda
+# ============================================
+
+# Reminder Clock In (setiap hari pukul 07:15)
+# 15 7 * * * /usr/local/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# Reminder Clock Out (setiap hari pukul 16:45)
+# 45 16 * * * /usr/local/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_reminders.php >> /home/isad8273/public_html/api-inventory.isavralabel.com/php/logs/reminder.log 2>&1
+
+# ============================================
+# CATATAN PENTING REMINDER:
+# ============================================
+# 1. Script reminder akan otomatis mendeteksi waktu saat ini:
+#    - Jika dijalankan sekitar pukul 07:15 (07:10 - 07:20), akan mengirim reminder clock in
+#    - Jika dijalankan sekitar pukul 16:45 (16:40 - 16:50), akan mengirim reminder clock out
+#    - Jika dijalankan di waktu lain, akan menampilkan status saja (tidak mengirim email)
+#
+# 2. Untuk manual testing, gunakan parameter:
+#    /usr/bin/php /path/to/send_attendance_reminders.php clock_in
+#    /usr/bin/php /path/to/send_attendance_reminders.php clock_out
+#
+# 3. Pastikan folder logs/ sudah dibuat:
+#    chmod 755 php/logs/
+#
+# 4. Test manual sebelum setup cronjob:
+#    /usr/bin/php /home/isad8273/public_html/api-inventory.isavralabel.com/php/send_attendance_reminders.php clock_in
+#
+# 5. Log reminder akan tersimpan di: php/logs/reminder.log
+#
+# 6. Waktu reminder dapat disesuaikan dengan mengubah cronjob schedule:
+#    - Format: MINUTE HOUR DAY MONTH WEEKDAY
+#    - Contoh: 15 7 * * * = setiap hari pukul 07:15
+#    - Contoh: 45 16 * * * = setiap hari pukul 16:45
+
+

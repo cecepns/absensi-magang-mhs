@@ -136,11 +136,11 @@ export default function MentorClockOut() {
   return (
     <div className="space-y-6">
       {/* Header with Actions */}
-      <div className="card p-6">
+      <div className="card-gradient p-6">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900">Kelola Clock Out</h2>
-            <p className="text-gray-600 mt-1">Atur jadwal dan approval clock out mahasiswa</p>
+            <h2 className="text-xl font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">Kelola Clock Out</h2>
+            <p className="text-gray-700 mt-1 font-medium">Atur jadwal dan approval clock out mahasiswa</p>
           </div>
           <div className="flex space-x-3">
             <button
@@ -151,7 +151,7 @@ export default function MentorClockOut() {
             </button>
             <button
               onClick={() => setShowManualForm(true)}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+              className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 shadow-lg transition-all duration-300"
             >
               Absensi Manual
             </button>
@@ -160,8 +160,8 @@ export default function MentorClockOut() {
       </div>
 
       {/* Schedule List */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="card-gradient p-6">
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mb-4">
           Daftar Jadwal Clock Out
         </h3>
         
@@ -285,8 +285,8 @@ export default function MentorClockOut() {
       </div>
 
       {/* Pending Approvals */}
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <div className="card-gradient p-6">
+        <h3 className="text-lg font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-4">
           Pending Approval ({pendingAttendances.length})
         </h3>
         

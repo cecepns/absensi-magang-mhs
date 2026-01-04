@@ -143,8 +143,8 @@ export default function MentorStudents() {
 
   return (
     <div className="space-y-6">
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Daftar Mahasiswa</h2>
+      <div className="card-gradient p-6">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">Daftar Mahasiswa</h2>
         
         {students.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
@@ -225,13 +225,13 @@ export default function MentorStudents() {
                               setProfileStudent(student);
                               setShowProfileModal(true);
                             }}
-                            className="text-blue-600 hover:text-blue-900"
+                            className="text-purple-600 hover:text-purple-800 font-medium"
                           >
                             Profil
                           </button>
                           <button
                             onClick={() => setSelectedStudent(student)}
-                            className="text-primary-600 hover:text-primary-900"
+                            className="text-pink-600 hover:text-pink-800 font-medium"
                           >
                             Absensi
                           </button>
@@ -248,7 +248,7 @@ export default function MentorStudents() {
 
       {/* Student Detail Modal */}
       {selectedStudent && (
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
               Detail Absensi - {selectedStudent.nama_lengkap}

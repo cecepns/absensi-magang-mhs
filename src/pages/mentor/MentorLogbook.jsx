@@ -77,13 +77,13 @@ export default function MentorLogbook() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="card p-6">
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">Logbook Mahasiswa</h2>
-        <p className="text-gray-600">Lihat dan pantau kegiatan harian mahasiswa (Read-only)</p>
+      <div className="card-gradient p-6">
+        <h2 className="text-xl font-semibold bg-gradient-to-r from-pink-600 via-purple-600 to-orange-600 bg-clip-text text-transparent mb-2">Logbook Mahasiswa</h2>
+        <p className="text-gray-700 font-medium">Lihat dan pantau kegiatan harian mahasiswa (Read-only)</p>
       </div>
 
       {/* Student Selection */}
-      <div className="card p-6">
+      <div className="card-gradient p-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -221,7 +221,7 @@ export default function MentorLogbook() {
       )}
 
       {!selectedStudent && (
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="text-center py-12 text-gray-500">
             <svg
               className="w-16 h-16 mx-auto mb-4 text-gray-400"

@@ -178,12 +178,12 @@ export default function Logbook() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="card p-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Logbook Harian</h1>
-          <p className="text-gray-600">
+        <div className="card-gradient p-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 via-purple-600 to-orange-600 bg-clip-text text-transparent mb-2">Logbook Harian</h1>
+          <p className="text-gray-700 font-medium">
             Catat kegiatan harian Anda (maksimal 4 kegiatan per hari)
           </p>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-gray-600 mt-1">
             Waktu akses: 07:30 - 17:30
           </p>
         </div>
@@ -201,8 +201,8 @@ export default function Logbook() {
         )}
 
         {/* Today's Activities */}
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="card-gradient p-6">
+          <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
             Kegiatan Hari Ini ({formatDate(new Date())})
           </h2>
           
@@ -283,7 +283,7 @@ export default function Logbook() {
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-2">
-                        <span className="bg-primary-100 text-primary-800 text-xs font-medium px-2 py-1 rounded">
+                        <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-medium px-2 py-1 rounded shadow-md">
                           Kegiatan {index + 1}
                         </span>
                         <span className="text-sm text-gray-500">{activity.durasi}</span>
@@ -293,7 +293,7 @@ export default function Logbook() {
                     <div className="flex space-x-2 ml-4">
                       <button
                         onClick={() => handleEditActivity(activity.id)}
-                        className="text-primary-600 hover:text-primary-700 text-sm"
+                        className="text-purple-600 hover:text-purple-700 font-medium text-sm"
                       >
                         Edit
                       </button>
@@ -322,9 +322,9 @@ export default function Logbook() {
         </div>
 
         {/* Logbook History */}
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-gray-900">Riwayat Logbook</h2>
+            <h2 className="text-lg font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent">Riwayat Logbook</h2>
             <div className="flex space-x-3">
               <select
                 value={monthFilter}

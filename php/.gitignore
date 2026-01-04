@@ -1,0 +1,16 @@
+# Logs
+logs/
+*.log
+
+# Composer
+vendor/
+composer.lock
+
+# Config (jika ingin di-ignore, uncomment baris berikut)
+# config.php
+
+# OS files
+.DS_Store
+Thumbs.db
+
+

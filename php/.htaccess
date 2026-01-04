@@ -1,0 +1,12 @@
+# Security: Prevent direct access to PHP files (optional)
+# Uncomment if you want to prevent direct web access
+
+# Deny from all
+
+# Allow cron jobs
+# Allow from 127.0.0.1
+
+# Or allow only specific IPs
+# Allow from YOUR_SERVER_IP
+
+

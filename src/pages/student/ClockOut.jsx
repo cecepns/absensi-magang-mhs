@@ -99,11 +99,11 @@ export default function ClockOut() {
   return (
     <Layout>
       <div className="max-w-2xl mx-auto">
-        <div className="card p-8">
+        <div className="card-gradient p-8">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Clock Out</h1>
-            <p className="text-gray-600">Waktu clock out: 17:00 - 17:30</p>
-            <p className="text-lg font-mono font-bold text-secondary-600 mt-2">
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mb-2">Clock Out</h1>
+            <p className="text-gray-700 font-medium">Waktu clock out: 17:00 - 17:30</p>
+            <p className="text-lg font-mono font-bold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mt-2">
               {formatTime(new Date())}
             </p>
           </div>
@@ -136,9 +136,9 @@ export default function ClockOut() {
 
           <div className="space-y-6">
             {/* Location Status */}
-            <div className="card border-2 border-gray-200 p-6">
-              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
-                <svg className="w-5 h-5 text-secondary-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="card-gradient border-2 border-orange-200 p-6">
+              <h3 className="font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center">
+                <svg className="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -206,9 +206,9 @@ export default function ClockOut() {
               <button
                 onClick={handleClockOut}
                 disabled={!canClockOut || loading}
-                className={`px-8 py-4 rounded-lg font-semibold text-lg transition-colors ${
+                className={`px-8 py-4 rounded-lg font-semibold text-lg transition-all duration-300 shadow-lg ${
                   canClockOut && !loading
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
+                    ? 'bg-gradient-to-r from-orange-500 to-pink-600 hover:from-orange-600 hover:to-pink-700 text-white hover:shadow-xl'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >

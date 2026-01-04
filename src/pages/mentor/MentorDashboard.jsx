@@ -34,11 +34,11 @@ export default function MentorDashboard() {
     <Layout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="card p-6">
-          <h1 className="text-2xl font-bold text-gray-900">
+        <div className="card-gradient p-6">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
             Dashboard {user?.role === 'pengurus' ? 'Pengurus Magang' : 'Mentor'}
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-700 mt-1 font-medium">
             Kelola absensi dan logbook mahasiswa magang
           </p>
         </div>
@@ -54,8 +54,8 @@ export default function MentorDashboard() {
                   whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
                   ${
                     isActive(item.path)
-                      ? 'border-primary-500 text-primary-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? 'border-purple-500 text-purple-600 bg-gradient-to-r from-purple-50 to-pink-50'
+                      : 'border-transparent text-gray-600 hover:text-purple-600 hover:border-purple-300'
                   }
                 `}
               >
@@ -172,10 +172,10 @@ function MentorOverview() {
     <div className="space-y-6">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        <div className="card p-6">
+        <div className="card-gradient p-6">
           <div className="flex items-center">
-            <div className="p-2 bg-primary-100 rounded-lg">
-              <svg className="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-gradient-to-br from-purple-500 to-purple-700 rounded-lg shadow-lg">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
@@ -255,38 +255,38 @@ function MentorOverview() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link to="/mentor/students" className="card p-6 hover:shadow-lg transition-shadow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <Link to="/mentor/students" className="card-gradient p-6 hover:shadow-xl transition-all duration-300">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
             Kelola Mahasiswa
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 mb-4">
             Lihat daftar mahasiswa dan status kehadiran mereka
           </p>
-          <div className="text-primary-600 font-medium">
+          <div className="text-purple-600 font-medium">
             Lihat Detail →
           </div>
         </Link>
 
-        <Link to="/mentor/clock-in" className="card p-6 hover:shadow-lg transition-shadow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <Link to="/mentor/clock-in" className="card-gradient p-6 hover:shadow-xl transition-all duration-300">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-orange-600 to-pink-600 bg-clip-text text-transparent mb-2">
             Kelola Clock In
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 mb-4">
             Atur jadwal dan approval clock in mahasiswa
           </p>
-          <div className="text-primary-600 font-medium">
+          <div className="text-orange-600 font-medium">
             Kelola Clock In →
           </div>
         </Link>
 
-        <Link to="/mentor/logbook" className="card p-6 hover:shadow-lg transition-shadow">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <Link to="/mentor/logbook" className="card-gradient p-6 hover:shadow-xl transition-all duration-300">
+          <h3 className="text-lg font-semibold bg-gradient-to-r from-pink-600 to-orange-600 bg-clip-text text-transparent mb-2">
             Lihat Logbook
           </h3>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-700 mb-4">
             Pantau kegiatan harian mahasiswa
           </p>
-          <div className="text-primary-600 font-medium">
+          <div className="text-pink-600 font-medium">
             Lihat Logbook →
           </div>
         </Link>
