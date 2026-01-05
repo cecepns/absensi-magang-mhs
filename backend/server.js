@@ -139,6 +139,11 @@ const authenticateToken = async (req, res, next) => {
       return res.status(401).json({ message: 'User tidak ditemukan' });
     }
 
+    // Check if user is active
+    if (!rows[0].is_active) {
+      return res.status(403).json({ message: 'Akun Anda telah dinonaktifkan' });
+    }
+
     req.user = rows[0];
     next();
   } catch {
@@ -230,6 +235,11 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     const user = rows[0];
+
+    // Check if user is active
+    if (!user.is_active) {
+      return res.status(403).json({ message: 'Akun Anda telah dinonaktifkan. Silakan hubungi administrator.' });
+    }
 
     // Check password
     const isPasswordValid = await bcryptjs.compare(password, user.password);
@@ -1414,6 +1424,7 @@ app.put('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus']),
 app.delete('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus']), async (req, res) => {
   try {
     const { id } = req.params;
+    const { hardDelete } = req.query; // Optional query parameter for hard delete
 
     // Check if user exists
     const [existing] = await db.execute('SELECT id FROM users WHERE id = ?', [id]);
@@ -1426,18 +1437,65 @@ app.delete('/api/pengurus/users/:id', authenticateToken, requireRole(['pengurus'
       return res.status(400).json({ message: 'Tidak dapat menghapus akun sendiri' });
     }
 
-    // Soft delete
-    await db.execute('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = ?', [id]);
+    // Hard delete (permanent delete)
+    if (hardDelete === 'true') {
+      // Delete mentor relations first (due to foreign key constraints)
+      await db.execute(
+        'DELETE FROM mentor_student_relation WHERE student_id = ? OR mentor_id = ?',
+        [id, id]
+      );
 
-    // Deactivate mentor relations
-    await db.execute(
-      'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ? OR mentor_id = ?',
-      [id, id]
-    );
+      // Delete user attendance records
+      await db.execute('DELETE FROM absensi_clock_in WHERE user_id = ?', [id]);
+      await db.execute('DELETE FROM absensi_clock_out WHERE user_id = ?', [id]);
 
-    res.json({ message: 'User berhasil dinonaktifkan' });
+      // Delete user logbooks
+      await db.execute('DELETE FROM logbook WHERE user_id = ?', [id]);
+
+      // Delete user
+      await db.execute('DELETE FROM users WHERE id = ?', [id]);
+
+      res.json({ message: 'User berhasil dihapus permanen' });
+    } else {
+      // Soft delete
+      await db.execute('UPDATE users SET is_active = FALSE, updated_at = NOW() WHERE id = ?', [id]);
+
+      // Deactivate mentor relations
+      await db.execute(
+        'UPDATE mentor_student_relation SET is_active = FALSE WHERE student_id = ? OR mentor_id = ?',
+        [id, id]
+      );
+
+      res.json({ message: 'User berhasil dinonaktifkan' });
+    }
   } catch (error) {
     console.error('Delete user error:', error);
+    res.status(500).json({ message: 'Terjadi kesalahan server' });
+  }
+});
+
+// Activate User (Reactivate inactive user)
+app.patch('/api/pengurus/users/:id/activate', authenticateToken, requireRole(['pengurus']), async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Check if user exists
+    const [existing] = await db.execute('SELECT id, is_active FROM users WHERE id = ?', [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: 'User tidak ditemukan' });
+    }
+
+    // Check if user is already active
+    if (existing[0].is_active === 1) {
+      return res.status(400).json({ message: 'User sudah aktif' });
+    }
+
+    // Activate user
+    await db.execute('UPDATE users SET is_active = TRUE, updated_at = NOW() WHERE id = ?', [id]);
+
+    res.json({ message: 'User berhasil diaktifkan' });
+  } catch (error) {
+    console.error('Activate user error:', error);
     res.status(500).json({ message: 'Terjadi kesalahan server' });
   }
 });

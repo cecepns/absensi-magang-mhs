@@ -168,17 +168,33 @@ export default function UserManagement() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Apakah Anda yakin ingin menonaktifkan user ini?')) {
+  const handleDeactivate = async (user) => {
+    if (!confirm(`Apakah Anda yakin ingin menonaktifkan user "${user.nama_lengkap}"?`)) {
       return;
     }
+
     try {
-      await ApiService.deleteUser(id);
+      await ApiService.deleteUser(user.id, false);
       alert('User berhasil dinonaktifkan');
       fetchUsers();
     } catch (error) {
-      console.error('Error deleting user:', error);
+      console.error('Error deactivating user:', error);
       alert(error.message || 'Gagal menonaktifkan user');
+    }
+  };
+
+  const handleActivate = async (user) => {
+    if (!confirm(`Apakah Anda yakin ingin mengaktifkan user "${user.nama_lengkap}"?`)) {
+      return;
+    }
+
+    try {
+      await ApiService.activateUser(user.id);
+      alert('User berhasil diaktifkan');
+      fetchUsers();
+    } catch (error) {
+      console.error('Error activating user:', error);
+      alert(error.message || 'Gagal mengaktifkan user');
     }
   };
 
@@ -384,13 +400,21 @@ export default function UserManagement() {
                             Assign Mentor
                           </button>
                         )}
-                        <button
-                          onClick={() => handleDelete(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                          disabled={!user.is_active}
-                        >
-                          {user.is_active ? 'Nonaktifkan' : 'Nonaktif'}
-                        </button>
+                        {user.is_active ? (
+                          <button
+                            onClick={() => handleDeactivate(user)}
+                            className="text-red-600 hover:text-red-900 font-medium"
+                          >
+                            Nonaktifkan
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleActivate(user)}
+                            className="text-green-600 hover:text-green-800 font-medium"
+                          >
+                            Aktifkan
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

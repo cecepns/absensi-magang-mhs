@@ -182,9 +182,18 @@ class ApiService {
     });
   }
 
-  async deleteUser(id) {
-    return this.request(`/pengurus/users/${id}`, {
+  async deleteUser(id, hardDelete = false) {
+    const url = hardDelete 
+      ? `/pengurus/users/${id}?hardDelete=true`
+      : `/pengurus/users/${id}`;
+    return this.request(url, {
       method: 'DELETE',
+    });
+  }
+
+  async activateUser(id) {
+    return this.request(`/pengurus/users/${id}/activate`, {
+      method: 'PATCH',
     });
   }
 
