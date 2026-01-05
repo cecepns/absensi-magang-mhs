@@ -23,6 +23,19 @@ require_once __DIR__ . '/email_templates.php';
 // Set execution time limit
 set_time_limit(MAX_EXECUTION_TIME);
 
+// Enable output buffering for web access to show progress in real-time
+if (php_sapi_name() !== 'cli') {
+    // For web access, enable output buffering and flush immediately
+    ob_start();
+    // Set headers for text output
+    header('Content-Type: text/plain; charset=utf-8');
+    // Disable output compression for real-time display
+    if (function_exists('apache_setenv')) {
+        @apache_setenv('no-gzip', 1);
+    }
+    @ini_set('zlib.output_compression', 0);
+}
+
 // Create logs directory if not exists
 $logDir = __DIR__ . '/logs';
 if (!is_dir($logDir)) {
@@ -37,6 +50,14 @@ function logMessage($message, $type = 'INFO') {
     $logMessage = "[{$timestamp}] [{$type}] {$message}" . PHP_EOL;
     file_put_contents(LOG_FILE, $logMessage, FILE_APPEND);
     echo $logMessage;
+    
+    // Flush output immediately for web access to show progress
+    if (php_sapi_name() !== 'cli') {
+        if (ob_get_level() > 0) {
+            ob_flush();
+        }
+        flush();
+    }
 }
 
 /**
@@ -106,19 +127,33 @@ function getStudentsWithoutClockOut($db, $today) {
 /**
  * Send clock in reminders
  */
-function sendClockInReminders($db, $emailSender) {
+function sendClockInReminders($db, $emailSender, $limit = null) {
     $today = date('Y-m-d');
     $students = getStudentsWithoutClockIn($db, $today);
+    
+    // If limit is specified (e.g. for web testing), reduce the list
+    if ($limit !== null) {
+        $students = array_slice($students, 0, (int)$limit);
+    }
+    
     $sentCount = 0;
     $errorCount = 0;
     
     logMessage("Found " . count($students) . " students without clock in today");
     
+    $totalStudents = count($students);
+    $currentIndex = 0;
+    
     foreach ($students as $student) {
+        $currentIndex++;
+        logMessage("Processing student {$currentIndex}/{$totalStudents}: {$student['email']} ({$student['nama_lengkap']})");
+        
         try {
+            logMessage("  - Preparing email template...");
             $template = EmailTemplates::getClockInReminderTemplate($student);
             $subject = "Reminder: Clock In Hari Ini - " . date('d F Y');
             
+            logMessage("  - Sending email to {$student['email']}...");
             $result = $emailSender->send(
                 $student['email'],
                 $subject,
@@ -127,17 +162,22 @@ function sendClockInReminders($db, $emailSender) {
             );
             
             if ($result['success']) {
-                logMessage("Clock in reminder sent to: {$student['email']} ({$student['nama_lengkap']})");
+                logMessage("  - ✓ Clock in reminder sent successfully to: {$student['email']} ({$student['nama_lengkap']})");
                 $sentCount++;
             } else {
-                logMessage("Failed to send clock in reminder to {$student['email']}: {$result['message']}", 'ERROR');
+                logMessage("  - ✗ Failed to send clock in reminder to {$student['email']}: {$result['message']}", 'ERROR');
                 $errorCount++;
             }
             
         } catch (Exception $e) {
-            logMessage("Error sending clock in reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
+            logMessage("  - ✗ Exception while sending clock in reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
+            $errorCount++;
+        } catch (Error $e) {
+            logMessage("  - ✗ Fatal error while sending clock in reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
             $errorCount++;
         }
+        
+        logMessage("  - Completed processing for {$student['email']}");
     }
     
     return ['sent' => $sentCount, 'errors' => $errorCount];
@@ -146,19 +186,33 @@ function sendClockInReminders($db, $emailSender) {
 /**
  * Send clock out reminders
  */
-function sendClockOutReminders($db, $emailSender) {
+function sendClockOutReminders($db, $emailSender, $limit = null) {
     $today = date('Y-m-d');
     $students = getStudentsWithoutClockOut($db, $today);
+    
+    // If limit is specified (e.g. for web testing), reduce the list
+    if ($limit !== null) {
+        $students = array_slice($students, 0, (int)$limit);
+    }
+    
     $sentCount = 0;
     $errorCount = 0;
     
     logMessage("Found " . count($students) . " students without clock out today");
     
+    $totalStudents = count($students);
+    $currentIndex = 0;
+    
     foreach ($students as $student) {
+        $currentIndex++;
+        logMessage("Processing student {$currentIndex}/{$totalStudents}: {$student['email']} ({$student['nama_lengkap']})");
+        
         try {
+            logMessage("  - Preparing email template...");
             $template = EmailTemplates::getClockOutReminderTemplate($student);
             $subject = "Reminder: Clock Out Hari Ini - " . date('d F Y');
             
+            logMessage("  - Sending email to {$student['email']}...");
             $result = $emailSender->send(
                 $student['email'],
                 $subject,
@@ -167,17 +221,22 @@ function sendClockOutReminders($db, $emailSender) {
             );
             
             if ($result['success']) {
-                logMessage("Clock out reminder sent to: {$student['email']} ({$student['nama_lengkap']})");
+                logMessage("  - ✓ Clock out reminder sent successfully to: {$student['email']} ({$student['nama_lengkap']})");
                 $sentCount++;
             } else {
-                logMessage("Failed to send clock out reminder to {$student['email']}: {$result['message']}", 'ERROR');
+                logMessage("  - ✗ Failed to send clock out reminder to {$student['email']}: {$result['message']}", 'ERROR');
                 $errorCount++;
             }
             
         } catch (Exception $e) {
-            logMessage("Error sending clock out reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
+            logMessage("  - ✗ Exception while sending clock out reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
+            $errorCount++;
+        } catch (Error $e) {
+            logMessage("  - ✗ Fatal error while sending clock out reminder to {$student['email']}: " . $e->getMessage(), 'ERROR');
             $errorCount++;
         }
+        
+        logMessage("  - Completed processing for {$student['email']}");
     }
     
     return ['sent' => $sentCount, 'errors' => $errorCount];
@@ -217,10 +276,22 @@ function getReminderType() {
     $currentMinute = (int)date('i');
     $currentTime = $currentHour * 60 + $currentMinute; // Convert to minutes from midnight
     
-    // Clock in reminder: 07:15 (7 * 60 + 15 = 435 minutes)
-    // Clock out reminder: 16:45 (16 * 60 + 45 = 1005 minutes)
-    // Allow 5 minutes window (430-440 for clock in, 1000-1010 for clock out)
+    // Behavior differs between CLI (cronjob/manual via terminal) and web:
+    // - CLI: always send reminder based on broad time-of-day range so
+    //        reminders tetap terkirim meskipun cron dijalankan di luar jam persis.
+    //        * 00:00 - 11:59  -> clock_in
+    //        * 12:00 - 23:59  -> clock_out
+    // - Web: tetap gunakan jendela waktu sempit agar tidak mudah salah kirim.
     
+    if (php_sapi_name() === 'cli') {
+        if ($currentHour < 12) {
+            return 'clock_in';
+        } else {
+            return 'clock_out';
+        }
+    }
+    
+    // Web access: keep strict 5-minute windows around 07:15 and 16:45
     $clockInReminderTime = 7 * 60 + 15; // 07:15
     $clockOutReminderTime = 16 * 60 + 45; // 16:45
     $window = 5; // 5 minutes window
@@ -244,15 +315,27 @@ function main() {
         $db = Database::getConnection();
         $emailSender = new EmailSender();
         
+        $isCli = php_sapi_name() === 'cli';
+        
+        // Optional limit, mainly for web testing: ?type=clock_in&limit=1
+        $limit = null;
+        if (!$isCli && isset($_GET['limit'])) {
+            $limitVal = (int)$_GET['limit'];
+            if ($limitVal > 0) {
+                $limit = $limitVal;
+                logMessage("Limit applied for web request: {$limit} student(s)");
+            }
+        }
+        
         $reminderType = getReminderType();
         
         if ($reminderType === 'clock_in') {
             logMessage("Processing clock in reminders...");
-            $results = sendClockInReminders($db, $emailSender);
+            $results = sendClockInReminders($db, $emailSender, $limit);
             logMessage("Clock in reminders - Sent: {$results['sent']}, Errors: {$results['errors']}");
         } elseif ($reminderType === 'clock_out') {
             logMessage("Processing clock out reminders...");
-            $results = sendClockOutReminders($db, $emailSender);
+            $results = sendClockOutReminders($db, $emailSender, $limit);
             logMessage("Clock out reminders - Sent: {$results['sent']}, Errors: {$results['errors']}");
         } else {
             $currentTime = date('H:i');
@@ -278,10 +361,22 @@ function main() {
         
     } catch (Exception $e) {
         logMessage("Fatal error: " . $e->getMessage(), 'ERROR');
+        logMessage("Stack trace: " . $e->getTraceAsString(), 'ERROR');
+        exit(1);
+    } catch (Error $e) {
+        logMessage("Fatal PHP error: " . $e->getMessage(), 'ERROR');
+        logMessage("Stack trace: " . $e->getTraceAsString(), 'ERROR');
         exit(1);
     }
 }
 
 // Run the script
 main();
+
+// Flush any remaining output for web access
+if (php_sapi_name() !== 'cli') {
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+}
 

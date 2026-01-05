@@ -8,17 +8,18 @@
 
 // Konfigurasi Database MySQL
 define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'absensi_magang');
+define('DB_USER', 'isad8273_absensi_magang_mhs');
+define('DB_PASS', 'isad8273_absensi_magang_mhs');
+define('DB_NAME', 'isad8273_absensi_magang_mhs');
 
 // Konfigurasi Email (SMTP)
-define('SMTP_HOST', 'smtp.gmail.com'); // Ganti dengan SMTP server Anda
-define('SMTP_PORT', 587);
-define('SMTP_USER', 'your-email@gmail.com'); // Email pengirim
-define('SMTP_PASS', 'your-app-password'); // App password untuk Gmail
-define('SMTP_FROM_EMAIL', 'your-email@gmail.com');
+define('SMTP_HOST', 'mail.isavralabel.com'); // Ganti dengan SMTP server Anda
+define('SMTP_PORT', 465);
+define('SMTP_USER', 'absensi@isavralabel.com'); // Email pengirim
+define('SMTP_PASS', '@absensi123'); // App password untuk Gmail
+define('SMTP_FROM_EMAIL', 'no-reply@gmail.com');
 define('SMTP_FROM_NAME', 'Sistem Absensi Magang');
+
 
 // Konfigurasi lainnya
 define('TIMEZONE', 'Asia/Jakarta');

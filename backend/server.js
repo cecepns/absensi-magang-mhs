@@ -458,16 +458,37 @@ app.get('/api/attendance/history', authenticateToken, requireRole(['mahasiswa'])
 
 // LOGBOOK ROUTES
 
+// Helper function to validate if date is within allowed range (today or max 2 days back)
+function isValidLogbookDate(tanggal) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const twoDaysAgo = new Date(today);
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+  
+  const logbookDate = new Date(tanggal);
+  logbookDate.setHours(0, 0, 0, 0);
+  
+  // Date must be between twoDaysAgo (inclusive) and today (inclusive)
+  return logbookDate >= twoDaysAgo && logbookDate <= today;
+}
+
 // Create Logbook
 app.post('/api/logbook', authenticateToken, requireRole(['mahasiswa']), async (req, res) => {
   try {
     const { kegiatan, durasi, tanggal } = req.body;
     const userId = req.user.id;
-    const currentTime = getCurrentTime();
 
-    // Validate logbook time
-    if (!isTimeInRange(currentTime, '07:30', '17:30')) {
-      return res.status(400).json({ message: 'Logbook hanya dapat diisi antara pukul 07:30 - 17:30' });
+    // Validate required fields
+    if (!kegiatan || !durasi || !tanggal) {
+      return res.status(400).json({ message: 'Kegiatan, durasi, dan tanggal harus diisi' });
+    }
+
+    // Validate date range (maksimal 2 hari ke belakang dari hari ini)
+    if (!isValidLogbookDate(tanggal)) {
+      return res.status(400).json({ 
+        message: 'Logbook hanya dapat diisi untuk hari ini atau maksimal 2 hari ke belakang' 
+      });
     }
 
     // Check daily limit
@@ -529,21 +550,27 @@ app.put('/api/logbook/:id', authenticateToken, requireRole(['mahasiswa']), async
     const { id } = req.params;
     const { kegiatan, durasi } = req.body;
     const userId = req.user.id;
-    const currentTime = getCurrentTime();
 
-    // Validate logbook time
-    if (!isTimeInRange(currentTime, '07:30', '17:30')) {
-      return res.status(400).json({ message: 'Logbook hanya dapat diupdate antara pukul 07:30 - 17:30' });
+    // Validate required fields
+    if (!kegiatan || !durasi) {
+      return res.status(400).json({ message: 'Kegiatan dan durasi harus diisi' });
     }
 
-    // Check if logbook exists and belongs to user
+    // Check if logbook exists and belongs to user, and get the tanggal
     const [existing] = await db.execute(
-      'SELECT id FROM logbook WHERE id = ? AND user_id = ?',
+      'SELECT id, tanggal FROM logbook WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
     if (existing.length === 0) {
       return res.status(404).json({ message: 'Logbook tidak ditemukan' });
+    }
+
+    // Validate date range (maksimal 2 hari ke belakang dari hari ini)
+    if (!isValidLogbookDate(existing[0].tanggal)) {
+      return res.status(400).json({ 
+        message: 'Logbook hanya dapat diupdate untuk hari ini atau maksimal 2 hari ke belakang' 
+      });
     }
 
     // Update logbook
@@ -564,21 +591,22 @@ app.delete('/api/logbook/:id', authenticateToken, requireRole(['mahasiswa']), as
   try {
     const { id } = req.params;
     const userId = req.user.id;
-    const currentTime = getCurrentTime();
 
-    // Validate logbook time
-    if (!isTimeInRange(currentTime, '07:30', '17:30')) {
-      return res.status(400).json({ message: 'Logbook hanya dapat dihapus antara pukul 07:30 - 17:30' });
-    }
-
-    // Check if logbook exists and belongs to user
+    // Check if logbook exists and belongs to user, and get the tanggal
     const [existing] = await db.execute(
-      'SELECT id FROM logbook WHERE id = ? AND user_id = ?',
+      'SELECT id, tanggal FROM logbook WHERE id = ? AND user_id = ?',
       [id, userId]
     );
 
     if (existing.length === 0) {
       return res.status(404).json({ message: 'Logbook tidak ditemukan' });
+    }
+
+    // Validate date range (maksimal 2 hari ke belakang dari hari ini)
+    if (!isValidLogbookDate(existing[0].tanggal)) {
+      return res.status(400).json({ 
+        message: 'Logbook hanya dapat dihapus untuk hari ini atau maksimal 2 hari ke belakang' 
+      });
     }
 
     // Delete logbook

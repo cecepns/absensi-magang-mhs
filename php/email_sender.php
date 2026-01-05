@@ -30,15 +30,15 @@ class EmailSender {
      * Install PHPMailer: composer require phpmailer/phpmailer
      */
     public function sendWithPHPMailer($to, $subject, $body, $isHTML = true) {
-        // Check if PHPMailer is available
+        // Load autoloader first if exists
+        $autoloader = __DIR__ . '/vendor/autoload.php';
+        if (file_exists($autoloader)) {
+            require_once $autoloader;
+        }
+        
+        // Check if PHPMailer is available after loading autoloader
         $phpmailerClass = 'PHPMailer\PHPMailer\PHPMailer';
         if (class_exists($phpmailerClass)) {
-            // Load autoloader if exists
-            $autoloader = __DIR__ . '/vendor/autoload.php';
-            if (file_exists($autoloader)) {
-                require_once $autoloader;
-            }
-            
             try {
                 $mail = new $phpmailerClass(true);
                 
@@ -51,6 +51,11 @@ class EmailSender {
                 $mail->SMTPSecure = $phpmailerClass::ENCRYPTION_STARTTLS;
                 $mail->Port = $this->smtpPort;
                 $mail->CharSet = 'UTF-8';
+                
+                // Timeout settings to prevent hanging
+                $mail->SMTPTimeout = 30; // 30 seconds timeout for SMTP operations
+                $mail->Timeout = 30; // 30 seconds timeout for socket operations
+                $mail->SMTPKeepAlive = false; // Don't keep connection alive
                 
                 // Recipients
                 $mail->setFrom($this->fromEmail, $this->fromName);
@@ -67,8 +72,12 @@ class EmailSender {
                 return ['success' => false, 'message' => "Email could not be sent. Error: " . $e->getMessage()];
             }
         } else {
-            // Fallback to native mail() function
-            return $this->sendWithNativeMail($to, $subject, $body, $isHTML);
+            // PHPMailer not available, fallback to native mail() if available
+            if (function_exists('mail')) {
+                return $this->sendWithNativeMail($to, $subject, $body, $isHTML);
+            } else {
+                return ['success' => false, 'message' => 'PHPMailer is not installed and mail() function is not available. Please install PHPMailer using: composer require phpmailer/phpmailer'];
+            }
         }
     }
     
@@ -76,6 +85,11 @@ class EmailSender {
      * Send email using native PHP mail() function
      */
     public function sendWithNativeMail($to, $subject, $body, $isHTML = true) {
+        // Check if mail() function is available
+        if (!function_exists('mail')) {
+            return ['success' => false, 'message' => 'mail() function is not available on this server. Please install PHPMailer using: composer require phpmailer/phpmailer'];
+        }
+        
         $headers = [];
         $headers[] = "MIME-Version: 1.0";
         $headers[] = "Content-Type: text/html; charset=UTF-8";
@@ -96,12 +110,23 @@ class EmailSender {
      * Send email (auto-detect method)
      */
     public function send($to, $subject, $body, $isHTML = true) {
-        // Try PHPMailer first, fallback to native mail()
+        // Load autoloader first to ensure PHPMailer is available if installed
+        $autoloader = __DIR__ . '/vendor/autoload.php';
+        if (file_exists($autoloader)) {
+            require_once $autoloader;
+        }
+        
+        // Try PHPMailer first (after loading autoloader), fallback to native mail()
         $phpmailerClass = 'PHPMailer\PHPMailer\PHPMailer';
         if (class_exists($phpmailerClass)) {
             return $this->sendWithPHPMailer($to, $subject, $body, $isHTML);
         } else {
-            return $this->sendWithNativeMail($to, $subject, $body, $isHTML);
+            // PHPMailer not available, try native mail() if available
+            if (function_exists('mail')) {
+                return $this->sendWithNativeMail($to, $subject, $body, $isHTML);
+            } else {
+                return ['success' => false, 'message' => 'Neither PHPMailer nor mail() function is available. Please install PHPMailer using: composer require phpmailer/phpmailer'];
+            }
         }
     }
 }

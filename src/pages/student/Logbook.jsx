@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../../components/Layout/Layout';
 import LoadingSpinner from '../../components/LoadingSpinner';
-import { isLogbookTime, formatDate } from '../../utils/time';
+import { formatDate } from '../../utils/time';
 import ApiService from '../../utils/api';
 
 export default function Logbook() {
@@ -9,6 +9,9 @@ export default function Logbook() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [activities, setActivities] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split('T')[0]
+  );
   const [newActivity, setNewActivity] = useState({
     kegiatan: '',
     durasi: ''
@@ -19,7 +22,9 @@ export default function Logbook() {
   const [logbookHistory, setLogbookHistory] = useState([]);
 
   useEffect(() => {
-    fetchTodayActivities();
+    // Saat pertama buka, ambil kegiatan untuk tanggal hari ini
+    const today = new Date().toISOString().split('T')[0];
+    fetchActivitiesByDate(today);
     fetchLogbookHistory();
   }, []);
 
@@ -27,16 +32,22 @@ export default function Logbook() {
     fetchLogbookHistory();
   }, [monthFilter, yearFilter]);
 
-  const fetchTodayActivities = async () => {
-    const today = new Date();
-    const month = today.getMonth() + 1;
-    const year = today.getFullYear();
-    
+  useEffect(() => {
+    // Jika tanggal pilihan berubah, refresh daftar kegiatan untuk tanggal tersebut
+    fetchActivitiesByDate(selectedDate);
+  }, [selectedDate]);
+
+  const fetchActivitiesByDate = async (dateString) => {
+    const dateObj = new Date(dateString);
+    const month = dateObj.getMonth() + 1;
+    const year = dateObj.getFullYear();
+
     try {
       const logbooks = await ApiService.getLogbooks(month, year);
-      const todayDate = today.toISOString().split('T')[0];
-      const todayActivities = logbooks.filter(log => log.tanggal === todayDate);
-      setActivities(todayActivities);
+      const activitiesForDate = logbooks.filter(
+        (log) => log.tanggal === dateString
+      );
+      setActivities(activitiesForDate);
     } catch (err) {
       console.error('Error fetching today activities:', err);
     }
@@ -62,18 +73,13 @@ export default function Logbook() {
       return;
     }
 
-    if (!isLogbookTime()) {
-      setError('Logbook hanya dapat diisi antara pukul 07:30 - 17:30');
-      return;
-    }
-
     setLoading(true);
     setError('');
 
     try {
       const response = await ApiService.createLogbook({
         ...newActivity,
-        tanggal: new Date().toISOString().split('T')[0]
+        tanggal: selectedDate
       });
 
       setActivities(prev => [...prev, response]);
@@ -100,11 +106,6 @@ export default function Logbook() {
   const handleUpdateActivity = async () => {
     if (!newActivity.kegiatan || !newActivity.durasi) {
       setError('Mohon isi semua field');
-      return;
-    }
-
-    if (!isLogbookTime()) {
-      setError('Logbook hanya dapat diupdate antara pukul 07:30 - 17:30');
       return;
     }
 
@@ -135,11 +136,6 @@ export default function Logbook() {
       return;
     }
 
-    if (!isLogbookTime()) {
-      setError('Logbook hanya dapat dihapus antara pukul 07:30 - 17:30');
-      return;
-    }
-
     setLoading(true);
     
     try {
@@ -165,6 +161,26 @@ export default function Logbook() {
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
+  // Opsi tanggal: hari ini dan maksimal 2 hari ke belakang
+  const getRecentDateOptions = () => {
+    const options = [];
+    for (let i = 0; i < 3; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const value = date.toISOString().split('T')[0];
+
+      let suffix = '';
+      if (i === 0) suffix = ' (Hari ini)';
+      else if (i === 1) suffix = ' (Kemarin)';
+
+      options.push({
+        value,
+        label: `${formatDate(date)}${suffix}`
+      });
+    }
+    return options;
+  };
+
   const groupedHistory = logbookHistory.reduce((groups, log) => {
     const date = log.tanggal;
     if (!groups[date]) {
@@ -184,7 +200,7 @@ export default function Logbook() {
             Catat kegiatan harian Anda (maksimal 4 kegiatan per hari)
           </p>
           <p className="text-sm text-gray-600 mt-1">
-            Waktu akses: 07:30 - 17:30
+            Anda dapat mengisi logbook untuk hari ini atau maksimal 2 hari ke belakang
           </p>
         </div>
 
@@ -202,12 +218,35 @@ export default function Logbook() {
 
         {/* Today's Activities */}
         <div className="card-gradient p-6">
-          <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
-            Kegiatan Hari Ini ({formatDate(new Date())})
+          <h2 className="text-lg font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">
+            Kegiatan Tanggal {formatDate(new Date(selectedDate))}
           </h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Anda dapat mengisi atau mengedit logbook untuk maksimal 2 hari terakhir
+            (hari ini dan 2 hari ke belakang).
+          </p>
           
           {/* Add/Edit Activity Form */}
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
+            <div className="flex flex-col md:justify-between mb-4 space-y-2">
+              <p className="text-sm text-gray-700">
+                Maksimal <span className="font-semibold">4 kegiatan</span> per hari.
+              </p>
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="text-sm text-gray-600">Tanggal logbook:</span>
+                <select
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="input-field py-2"
+                >
+                  {getRecentDateOptions().map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
